@@ -3,722 +3,115 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Model Bench · 模型检测</title>
+<title>免费大模型速度排行榜 · Model Bench</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-:root { --bg: #f7f8fa; --panel: #ffffff; --border: #e5e7eb; --text: #1f2937; --muted: #6b7280; --accent: #10b981; --danger: #ef4444; --warn: #f59e0b; }
-html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); font-size: 13px; }
-button { cursor: pointer; font-size: 13px; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: white; color: var(--text); transition: all .15s; }
-button:hover { background: #f3f4f6; }
-button.primary { background: var(--accent); color: white; border-color: transparent; font-weight: 500; }
-button.primary:hover { background: #059669; }
-input, select, textarea { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: white; color: var(--text); }
-input:focus, select:focus { outline: none; border-color: var(--accent); }
-code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
-.app { display: flex; flex-direction: column; height: 100vh; }
-.header { height: 48px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; gap: 12px; }
-.header-title { font-weight: 600; font-size: 15px; }
-.main { flex: 1; display: grid; grid-template-columns: 260px 1fr; overflow: hidden; }
-.sidebar { background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-.sidebar-header { padding: 12px; border-bottom: 1px solid var(--border); }
-.sidebar-header input { margin-top: 8px; }
-.platform-list { flex: 1; overflow-y: auto; padding: 8px; }
-.platform-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text); transition: background .15s; user-select: none; }
-.platform-item:hover { background: #f3f4f6; }
-.platform-item.active { background: #ecfdf5; color: #065f46; font-weight: 500; }
-.platform-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: white; flex-shrink: 0; }
-.sidebar-footer { padding: 10px 12px; border-top: 1px solid var(--border); }
-.content { background: var(--bg); overflow-y: auto; padding: 16px; }
-.card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
-.card h3 { font-size: 14px; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
-.row { display: flex; gap: 12px; margin-bottom: 10px; align-items: center; }
-.row label { width: 80px; font-size: 13px; color: var(--muted); flex-shrink: 0; }
-.row .field { flex: 1; }
-.hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
-.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: white; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th, td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
-th { background: #f9fafb; font-weight: 600; position: sticky; top: 0; }
-tr:hover td { background: #f9fafb; }
-.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; }
-.badge-ok { background: #d1fae5; color: #065f46; }
-.badge-err { background: #fee2e2; color: #991b1b; }
-.badge-warn { background: #fef3c7; color: #92400e; }
-.toggle { width: 36px; height: 20px; background: #d1d5db; border-radius: 999px; position: relative; cursor: pointer; transition: background .2s; border: none; padding: 0; }
-.toggle.on { background: var(--accent); }
-.toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: white; transition: transform .2s; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
-.toggle.on::after { transform: translateX(16px); }
-.toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
-.log-box { background: #111827; color: #e5e7eb; border-radius: 8px; padding: 10px 12px; font-family: ui-monospace, monospace; font-size: 12px; max-height: 260px; overflow-y: auto; white-space: pre-wrap; line-height: 1.6; }
-.log-box .err { color: #fca5a5; }
-.log-box .warn { color: #fcd34d; }
-.log-box .ok { color: #6ee7b7; }
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
-.modal-overlay.show { display: flex; }
-.modal { background: white; border-radius: 12px; width: 720px; max-width: 100%; max-height: 82vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
-.modal-header { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); }
-.modal-header h3 { font-size: 15px; font-weight: 600; }
-.modal-close { margin-left: auto; cursor: pointer; border: none; background: none; font-size: 18px; color: var(--muted); }
-.modal-search { padding: 12px 16px; display: flex; gap: 8px; border-bottom: 1px solid var(--border); }
-.modal-search input { flex: 1; }
-.modal-tabs { display: flex; gap: 6px; padding: 8px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-.modal-tab { padding: 4px 12px; border-radius: 999px; font-size: 12px; cursor: pointer; border: 1px solid var(--border); background: white; color: var(--muted); }
-.modal-tab.active { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; font-weight: 500; }
-.modal-body { flex: 1; overflow-y: auto; padding: 8px 16px; }
-.modal-group { margin-bottom: 8px; }
-.modal-group-header { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; font-weight: 600; font-size: 13px; }
-.modal-group-badge { background: #ecfdf5; color: #065f46; border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 600; }
-.modal-group-minus { margin-left: auto; color: var(--muted); cursor: pointer; border: 1px solid var(--border); background: white; border-radius: 6px; font-size: 11px; padding: 2px 8px; }
-.modal-model { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
-.modal-model:hover { background: #f9fafb; }
-.modal-model input { width: 16px; height: 16px; }
-.modal-model .mm-name { font-size: 13px; }
-.modal-model .mm-id { font-size: 11px; color: var(--muted); font-family: ui-monospace, monospace; }
-.modal-model .mm-free { background: #d1fae5; color: #065f46; border-radius: 999px; padding: 1px 8px; font-size: 10px; }
-.modal-model .mm-price { margin-left: auto; font-size: 11px; color: var(--muted); }
-.modal-footer { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
-.modal-footer .count { font-size: 12px; color: var(--muted); margin-right: auto; }
-.empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
-.empty-state h2 { font-size: 16px; margin-bottom: 8px; color: var(--text); }
-textarea.model-input { font-family: ui-monospace, monospace; min-height: 120px; resize: vertical; line-height: 1.5; }
+  :root { color-scheme: dark; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+         background: #0f1117; color: #e2e5ec; padding: 24px 16px 60px; }
+  .wrap { max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .sub { color: #8b93a5; font-size: 13px; margin-bottom: 20px; }
+  .sub a { color: #10b981; text-decoration: none; }
+  .updated { font-size: 12px; color: #8b93a5; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #232735; }
+  th { color: #8b93a5; font-weight: 500; font-size: 12px; cursor: pointer;
+       user-select: none; white-space: nowrap; }
+  th:hover { color: #e2e5ec; }
+  th .arrow { opacity: .6; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .rank { color: #8b93a5; width: 34px; }
+  .prov { display: inline-block; font-size: 12px; color: #8b93a5; }
+  .model { word-break: break-all; }
+  .fast { color: #10b981; }
+  .err { color: #ef4444; font-size: 12px; }
+  .tbl-scroll { overflow-x: auto; }
+  h2 { font-size: 16px; margin: 36px 0 10px; }
+  .quota-list { font-size: 13px; line-height: 1.9; color: #b8bfce; }
+  .quota-list b { color: #e2e5ec; }
+  .empty { padding: 40px 0; text-align: center; color: #8b93a5; }
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="header">
-    <div class="header-title">🧪 Model Bench</div>
-    <span style="font-size:11px;color:var(--muted)">Cherry Studio 风格检测工具</span>
-    <div style="margin-left:auto;display:flex;gap:8px">
-      <button onclick="app.openHelp()">使用说明</button>
-    </div>
+<div class="wrap">
+  <h1>免费大模型速度排行榜</h1>
+  <div class="sub">自动定时实测各家免费 API 的首字延迟与生成速度 ·
+    <a href="tool.html">用自己的 Key 手动测 →</a></div>
+  <div class="updated" id="updated">加载中…</div>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr>
+        <th class="rank">#</th>
+        <th data-k="providerName">厂商 <span class="arrow"></span></th>
+        <th data-k="model">模型 <span class="arrow"></span></th>
+        <th data-k="ttft">首字延迟 <span class="arrow">▲</span></th>
+        <th data-k="tps">生成速度 <span class="arrow"></span></th>
+      </tr></thead>
+      <tbody id="tbody"><tr><td colspan="5" class="empty">加载中…</td></tr></tbody>
+    </table>
   </div>
-
-  <div class="main">
-    <div class="sidebar">
-      <div class="sidebar-header">
-        <div style="font-size:12px;color:var(--muted)">平台</div>
-        <input id="searchPlatform" placeholder="搜索平台..." oninput="app.filterPlatforms()">
-        <button style="width:100%;margin-top:8px;" onclick="app.addPlatform()">+ 添加平台</button>
-      </div>
-      <div class="platform-list" id="platformList"></div>
-    </div>
-
-    <div class="content" id="content">
-      <div class="empty-state">
-        <h2>选择一个配置开始检测</h2>
-        <p>左侧选择或添加平台，填入 API Key + Base URL + 模型列表即可检测。</p>
-        <p style="margin-top:8px;font-size:12px;color:var(--muted)">支持所有 OpenAI 兼容接口：OpenRouter / OpenAI / DeepSeek / Groq / Together / 自定义</p>
-      </div>
-    </div>
-  </div>
+  <h2>各家免费额度一览</h2>
+  <div class="quota-list" id="quota"></div>
 </div>
-
 <script>
-// ============================================================
-// DATA
-// ============================================================
-const PRESETS = {
-  openrouter:  { name: "OpenRouter",     base: "https://openrouter.ai/api/v1",            color: "#10b981", doc: "聚合 300+ 模型，/models 自带价格，检测最全" },
-  openai:      { name: "OpenAI",         base: "https://api.openai.com/v1",               color: "#2563eb", doc: "GPT 系列" },
-  anthropic:   { name: "Anthropic",      base: "https://api.anthropic.com/v1",            color: "#d97706", compat: "anthropic", doc: "Claude 系列，走 /v1/messages（非 OpenAI 兼容）" },
-  deepseek:    { name: "DeepSeek",       base: "https://api.deepseek.com/v1",             color: "#2563eb", doc: "deepseek-chat / reasoner" },
-  siliconflow: { name: "SiliconFlow",    base: "https://api.siliconflow.cn/v1",           color: "#7c3aed", doc: "Qwen / DeepSeek 等开源模型" },
-  groq:        { name: "Groq",           base: "https://api.groq.com/openai/v1",          color: "#ef4444", doc: "LPU 极速推理" },
-  together:    { name: "Together",       base: "https://api.together.xyz/v1",             color: "#f59e0b", doc: "开源 + 闭源聚合" },
-  fireworks:   { name: "Fireworks",      base: "https://api.fireworks.ai/inference/v1",   color: "#db2777", doc: "Firefunction / 开源模型" },
-  mistral:     { name: "Mistral",        base: "https://api.mistral.ai/v1",               color: "#0ea5e9", doc: "Mistral / Mixtral" },
-  xai:         { name: "xAI (Grok)",     base: "https://api.x.ai/v1",                     color: "#64748b", doc: "grok 系列" },
-  gemini:      { name: "Google Gemini", base: "https://generativelanguage.googleapis.com/v1beta/openai", color: "#4285f4", doc: "Gemini OpenAI 兼容端点" },
-  perplexity:  { name: "Perplexity",     base: "https://api.perplexity.ai",               color: "#14b8a6", doc: "联网搜索模型（无 /models 列表）" },
-  minimax:     { name: "MiniMax",        base: "https://api.minimax.chat/v1",             color: "#a855f7", doc: "abab / MiniMax 系列" },
-  stepfun:     { name: "StepFun",        base: "https://api.stepfun.com/v1",              color: "#ea580c", doc: "阶跃星辰 step 系列" },
-  baidu:       { name: "百度千帆",        base: "https://qianfan.baidubce.com/v2",         color: "#2932e1", doc: "ERNIE 系列" },
-  nvidia:      { name: "NVIDIA NIM",     base: "https://integrate.api.nvidia.com/v1",     color: "#76b900", doc: "NIM 微服务" },
-  novita:      { name: "Novita",         base: "https://api.novita.ai/v3/openai",         color: "#f43f5e", doc: "聚合推理" },
-  ppio:        { name: "PPIO",           base: "https://api.ppio.cn/v1",                  color: "#0d9488", doc: "派欧云推理" },
-  moonshot:    { name: "Moonshot",       base: "https://api.moonshot.cn/v1",              color: "#0ea5e9", doc: "Kimi 系列" },
-  aliyun:      { name: "阿里云百炼",       base: "https://dashscope.aliyuncs.com/compatible-mode/v1", color: "#ff6a00", doc: "通义千问系列" },
-  tencent:     { name: "腾讯混元",        base: "https://api.hunyuan.cloud.tencent.com/v1", color: "#0052d9", doc: "Hunyuan 系列" },
-  volcengine:  { name: "火山方舟",        base: "https://ark.cn-beijing.volces.com/api/v3", color: "#1d4ed8", doc: "Doubao / 方舟模型" },
-  zhipu:       { name: "智谱",           base: "https://open.bigmodel.cn/api/paas/v4",    color: "#7c3aed", doc: "GLM 系列" },
-  azure:       { name: "Azure OpenAI",   base: "https://YOUR-RESOURCE.openai.azure.com/openai", color: "#0078d4", compat: "azure", doc: "把 YOUR-RESOURCE 换成你的资源名；模型=部署名" },
-  ollama:      { name: "Ollama (本地)",   base: "http://localhost:11434/v1",              color: "#000000", doc: "本地模型，需开启 CORS" },
-  lmstudio:    { name: "LM Studio (本地)", base: "http://localhost:1234/v1",             color: "#6366f1", doc: "本地模型" },
-  localai:     { name: "LocalAI (本地)",  base: "http://localhost:8080/v1",              color: "#475569", doc: "本地模型" },
-  vllm:        { name: "vLLM (本地)",     base: "http://localhost:8000/v1",              color: "#475569", doc: "本地部署" },
-};
-const MODELS_MAP = {
-  openrouter:  ["auto","openai/gpt-4o","anthropic/claude-4.5-sonnet","google/gemini-2.5-pro","deepseek/deepseek-r1"],
-  openai:      ["gpt-4o","gpt-4o-mini","o3","o4-mini"],
-  anthropic:   ["claude-sonnet-4-20250514","claude-3-5-haiku-20241022"],
-  deepseek:    ["deepseek-chat","deepseek-reasoner"],
-  siliconflow: ["Qwen/Qwen2.5-72B-Instruct","deepseek-ai/DeepSeek-V3"],
-  groq:        ["llama-3.3-70b-versatile","mixtral-8x7b-32768"],
-  together:    ["meta-llama/Meta-Llama-3.1-405B-Instruct","Qwen/Qwen2.5-72B-Instruct"],
-  fireworks:   ["accounts/fireworks/models/llama-v3p3-70b-instruct","accounts/fireworks/models/mixtral-8x22b-instruct"],
-  mistral:     ["mistral-large-latest","mistral-small-latest"],
-  xai:         ["grok-2-latest","grok-2-mini"],
-  gemini:      ["gemini-2.5-pro","gemini-2.5-flash"],
-  perplexity:  ["sonar","sonar-pro"],
-  minimax:     ["abab6.5s-chat","MiniMax-Text-01"],
-  stepfun:     ["step-2-16k","step-1.5-pro"],
-  baidu:       ["ernie-4.5-turbo","ernie-4.0-8k"],
-  nvidia:      ["meta/llama-3.1-70b-instruct","nvidia/llama-3.1-nemotron-70b-instruct"],
-  novita:      ["meta-llama/llama-3.1-70b-instruct","deepseek/deepseek-v3"],
-  ppio:        ["qwen2.5-72b-instruct","deepseek-v3"],
-  moonshot:    ["moonshot-v1-8k","moonshot-v1-32k"],
-  aliyun:      ["qwen-max","qwen-plus","qwen-turbo"],
-  tencent:     ["hunyuan-turbo","hunyuan-pro"],
-  volcengine:  ["doubao-pro-32k","doubao-lite-32k"],
-  zhipu:       ["glm-4-plus","glm-4-air"],
-  azure:       ["gpt-4o","gpt-4o-mini"],
-  ollama:      ["llama3.1","qwen2.5"],
-  lmstudio:    ["local-model"],
-  localai:     ["gpt-3.5-turbo"],
-  vllm:        ["meta-llama/Llama-3.1-8B-Instruct"],
-};
-// 默认启用：云端 OpenAI 兼容厂商全开；本地 / Azure / Anthropic 默认关（需特殊配置）
-const DEFAULT_ENABLED = {
-  openrouter:1, openai:1, deepseek:1, siliconflow:1, groq:1, together:1, fireworks:1, mistral:1, xai:1,
-  gemini:1, perplexity:1, minimax:1, stepfun:1, baidu:1, nvidia:1, novita:1, ppio:1, moonshot:1,
-  aliyun:1, tencent:1, volcengine:1, zhipu:1,
-  azure:0, anthropic:0, ollama:0, lmstudio:0, localai:0, vllm:0,
-};
-// 各厂商 /models 路径后缀不同：/v1、/v2、/v3、/v4、/api/v1、/openai 后直接拼 /models
-function modelsUrl(base) {
-  base = (base || "").replace(/\/$/, "");
-  if (/\/(v1|v2|v3|v4|api\/v1|openai)$/.test(base)) return base + "/models";
-  return base + "/v1/models";
+let rows = [], sortKey = "ttft", sortAsc = true;
+
+function render() {
+  const ok = rows.filter(r => r.ok).sort((a, b) => {
+    const va = a[sortKey], vb = b[sortKey];
+    const cmp = typeof va === "string" ? String(va).localeCompare(String(vb)) : va - vb;
+    return sortAsc ? cmp : -cmp;
+  });
+  const bad = rows.filter(r => !r.ok);
+  const tbody = document.getElementById("tbody");
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">暂无数据 — 第一轮跑分完成后这里会出现榜单</td></tr>';
+    return;
+  }
+  const minTtft = Math.min(...ok.map(r => r.ttft));
+  const maxTps = Math.max(...ok.map(r => r.tps));
+  tbody.innerHTML = ok.map((r, i) => `<tr>
+      <td class="rank">${i + 1}</td>
+      <td><span class="prov">${r.providerName}</span></td>
+      <td class="model">${r.model}</td>
+      <td class="num ${r.ttft === minTtft ? "fast" : ""}">${r.ttft} ms</td>
+      <td class="num ${r.tps === maxTps ? "fast" : ""}">${r.tps} tok/s</td>
+    </tr>`).join("") +
+    bad.map(r => `<tr>
+      <td class="rank">–</td>
+      <td><span class="prov">${r.providerName}</span></td>
+      <td class="model">${r.model}</td>
+      <td colspan="2" class="err">${r.error || "失败"}</td>
+    </tr>`).join("");
+  document.querySelectorAll("th[data-k]").forEach(th => {
+    th.querySelector(".arrow").textContent =
+      th.dataset.k === sortKey ? (sortAsc ? "▲" : "▼") : "";
+  });
 }
 
-const ls = {
-  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
-  set(k,v) { localStorage.setItem(k, JSON.stringify(v)); }
-};
+document.querySelectorAll("th[data-k]").forEach(th => th.onclick = () => {
+  const k = th.dataset.k;
+  if (k === sortKey) sortAsc = !sortAsc;
+  else { sortKey = k; sortAsc = k !== "tps"; }  // 速度默认降序
+  render();
+});
 
-const app = {
-  platforms: [],
-  current: null,
-  useProxy: false,
-  proxyUrl: "http://localhost:9001",
-
-  init() {
-    const saved = ls.get("mb_platforms");
-    let list;
-    if (saved && saved.length) {
-      // 保留已有配置（Key / 启用状态 / 模型列表），仅补齐缺失的预设厂商
-      list = saved.slice();
-      Object.keys(PRESETS).forEach(id => {
-        if (!list.find(x => x.id === id)) {
-          const pr = PRESETS[id];
-          list.push({ id, name: pr.name, base: pr.base, key: "", enabled: !!DEFAULT_ENABLED[id], models: (MODELS_MAP[id] || []).slice(), compat: pr.compat || null });
-        }
-      });
-    } else {
-      list = Object.keys(PRESETS).map(id => {
-        const pr = PRESETS[id];
-        return { id, name: pr.name, base: pr.base, key: "", enabled: !!DEFAULT_ENABLED[id], models: (MODELS_MAP[id] || []).slice(), compat: pr.compat || null };
-      });
-    }
-    this.platforms = list;
-    console.log('Platforms count:', this.platforms.length);
-    const u = ls.get("mb_proxyUrl");
-    if (u) {
-      this.proxyUrl = u;
-      const p = ls.get("mb_useProxy");
-      if (p != null) this.useProxy = p;
-    } else {
-      // Smart default: local (server.py) vs Cloudflare Worker (same-origin /proxy)
-      const h = location.hostname;
-      const isLocal = h === "localhost" || h === "127.0.0.1" || h.startsWith("192.") || location.protocol === "file:";
-      if (isLocal) {
-        this.proxyUrl = "http://localhost:9001";
-        this.useProxy = false;
-      } else {
-        this.proxyUrl = location.origin + "/proxy";
-        this.useProxy = true;
-      }
-    }
-    this.renderPlatforms();
-    this.restoreSelection();
-  },
-
-  // All API traffic (GET + POST) routes through here.
-  // When useProxy is on, target is appended as ?url= to the proxy.
-  apiCall(url, opts = {}) {
-    if (!this.useProxy) return fetch(url, opts);
-    const u = new URL(this.proxyUrl);
-    u.searchParams.set("url", url);
-    return fetch(u.toString(), opts);
-  },
-
-  // ---------- Sidebar ----------
-  renderPlatforms() {
-    const q = document.getElementById("searchPlatform").value.trim().toLowerCase();
-    const el = document.getElementById("platformList");
-    el.innerHTML = this.platforms.filter(p => !q || p.name.toLowerCase().includes(q) || p.id.includes(q))
-      .map(p => `<div class="platform-item ${this.current && this.current.id === p.id ? 'active' : ''}" data-id="${p.id}" onclick="app.selectPlatform('${p.id}')">
-        <div class="platform-icon" style="background:${(PRESETS[p.id]||{color:'#6b7280'}).color}">${p.name[0]}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:500">${p.name}</div>
-          <div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.base}</div>
-        </div>
-        <div class="toggle ${p.enabled ? 'on' : ''}" onclick="event.stopPropagation(); app.toggleEnable('${p.id}')"></div>
-      </div>`).join("");
-  },
-  filterPlatforms() { this.renderPlatforms(); },
-  selectPlatform(id) {
-    this.current = this.platforms.find(p => p.id === id) || null;
-    this.renderPlatforms();
-    this.renderContent();
-    sessionStorage.setItem("mb_current", id);
-  },
-  restoreSelection() {
-    const c = sessionStorage.getItem("mb_current");
-    if (c) { const p = this.platforms.find(x => x.id === c); if (p) { this.current = p; this.renderPlatforms(); this.renderContent(); } }
-  },
-  toggleEnable(id) {
-    const p = this.platforms.find(x => x.id === id);
-    if (!p) return;
-    p.enabled = !p.enabled;
-    ls.set("mb_platforms", this.platforms);
-    this.renderPlatforms();
-  },
-  addPlatform() {
-    const name = prompt("平台名称（如 Fireworks、Mistral）");
-    if (!name) return;
-    const base = prompt("Base URL（OpenAI 兼容路径，如 https://api.together.xyz/v1）");
-    const id = name.toLowerCase().replace(/[^a-z0-9]+/g,"_");
-    this.platforms.push({ id, name, base: base || "", key: "", enabled: true, models: [] });
-    ls.set("mb_platforms", this.platforms);
-    this.renderPlatforms();
-    this.selectPlatform(id);
-  },
-
-  // ---------- Content ----------
-  renderContent() {
-    const el = document.getElementById("content");
-    if (!this.current) { el.innerHTML = `<div class="empty-state"><h2>选择一个配置开始检测</h2></div>`; return; }
-    const p = this.current;
-    el.innerHTML = `
-      <div class="card">
-        <h3>${p.name} <span style="font-weight:400;font-size:12px;color:var(--muted)">配置</span>
-          <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-            <label style="width:auto;display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
-              <input type="checkbox" id="useProxy" ${this.useProxy?'checked':''} onchange="app.useProxy=this.checked;app.saveSettings()"> 代理
-            </label>
-            <input id="proxyUrlInput" value="${this.esc(this.proxyUrl)}" style="width:200px;font-size:12px" onchange="app.proxyUrl=this.value;app.saveSettings()">
-          </div>
-        </h3>
-        <div class="row">
-          <label>API 密钥</label>
-          <div class="field">
-            <input id="apiKey" type="password" value="${this.esc(p.key||'')}" placeholder="sk-...">
-            <div class="hint">密钥只存浏览器 localStorage</div>
-          </div>
-        </div>
-        <div class="row">
-          <label>API 地址</label>
-          <div class="field">
-            <input id="apiBase" value="${this.esc(p.base||'')}" placeholder="https://api.openai.com/v1">
-          </div>
-        </div>
-        <div class="row">
-          <label>模型列表</label>
-          <div class="field">
-            <textarea id="modelsText" class="model-input" placeholder="每行一个模型 ID，如：&#10;gpt-4o&#10;gpt-4o-mini&#10;claude-3-5-haiku-20241022">${p.models.map(m => this.esc(m)).join("\n")}</textarea>
-            <div class="hint">每行一个模型 ID，或留空后点「自动拉取」。</div>
-          </div>
-        </div>
-        <div class="toolbar">
-          <button class="primary" onclick="app.runFetchModels()">自动拉取模型列表</button>
-          <button onclick="app.openModelPicker()">📋 选择模型</button>
-          <button onclick="app.runDetect()">🔍 检测</button>
-          <button onclick="app.clearResults()">清空</button>
-        </div>
-      </div>
-
-      <div id="resultCard" style="display:none">
-        <div class="card">
-          <h3>检测结果 <span id="resultCount" class="badge badge-warn">0</span>
-            <div style="margin-left:auto;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)">
-              排序：<select id="sortBy" onchange="app.renderResults()">
-                <option value="speed">速度优先</option>
-                <option value="price">价格低→高</option>
-                <option value="price_desc">价格高→低</option>
-                <option value="status">可用性</option>
-              </select>
-            </div>
-          </h3>
-          <div class="table-wrap" style="max-height:500px;overflow-y:auto">
-            <table>
-              <thead>
-                <tr><th>模型</th><th>状态</th><th>首 Token</th><th>总耗时</th><th>输入价格</th><th>输出价格</th><th>备注</th></tr>
-              </thead>
-              <tbody id="resultBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div id="logCard" style="display:none">
-        <div class="card">
-          <h3>日志 <button style="margin-left:auto;font-size:11px" onclick="document.getElementById('logBox').innerHTML=''">清空</button></h3>
-          <div class="log-box" id="logBox"></div>
-        </div>
-      </div>
-
-      <div class="modal-overlay" id="modelPickerModal" onclick="if(event.target===this)app.closeModelPicker()">
-        <div class="modal">
-          <div class="modal-header">
-            <h3>选择模型 · ${p.name}</h3>
-            <button class="modal-close" onclick="app.closeModelPicker()">✕</button>
-          </div>
-          <div class="modal-search">
-            <input id="pickerSearch" style="flex:1" placeholder="搜索模型 ID 或名称..." oninput="app.pickerState.q=this.value;app.renderModelPicker()">
-          </div>
-          <div class="modal-tabs">
-            <span class="modal-tab active" data-tab="all" onclick="app.setPickerTab('all',this)">全部</span>
-            <span class="modal-tab" data-tab="infer" onclick="app.setPickerTab('infer',this)">推理</span>
-            <span class="modal-tab" data-tab="vision" onclick="app.setPickerTab('vision',this)">视觉</span>
-            <span class="modal-tab" data-tab="web" onclick="app.setPickerTab('web',this)">联网</span>
-            <span class="modal-tab" data-tab="free" onclick="app.setPickerTab('free',this)">免费</span>
-            <span class="modal-tab" data-tab="embed" onclick="app.setPickerTab('embed',this)">嵌入</span>
-            <span class="modal-tab" data-tab="rerank" onclick="app.setPickerTab('rerank',this)">重排</span>
-            <span class="modal-tab" data-tab="tool" onclick="app.setPickerTab('tool',this)">工具</span>
-          </div>
-          <div class="modal-body" id="pickerBody"></div>
-          <div class="modal-footer">
-            <span class="count" id="pickerCount">0 已选</span>
-            <button onclick="app.closeModelPicker()">取消</button>
-            <button class="primary" onclick="app.confirmModelPicker()">确定</button>
-          </div>
-        </div>
-      </div>
-    `;
-  },
-
-  // ---------- Auto fetch ----------
-  async runFetchModels() {
-    const p = this.current; if (!p) return;
-    if (p.compat === "anthropic" || p.compat === "azure") {
-      alert(`${p.name} 不支持自动拉取模型列表，请在「模型列表」里手动填写模型 ID。`);
-      return;
-    }
-    const base = document.getElementById("apiBase").value.trim();
-    p.base = base;
-    p.key = document.getElementById("apiKey").value.trim();
-    this.save();
-    const url = modelsUrl(base);
-    this.log(`拉取模型列表：${url}`);
-    try {
-      const headers = {}; if (p.key) headers["Authorization"] = `Bearer ${p.key}`;
-      const res = await this.apiCall(url, { headers });
-      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-      const data = await res.json();
-      let models = [];
-      if (Array.isArray(data)) models = data.map(x => x.id).filter(Boolean);
-      else if (Array.isArray(data.data)) models = data.data.map(x => x.id).filter(Boolean);
-      else if (data.models && Array.isArray(data.models)) models = data.models.map(x => x.id).filter(Boolean);
-      if (!models.length) throw new Error("未找到模型列表");
-      p.models = models;
-      document.getElementById("modelsText").value = models.join("\n");
-      this.save();
-      this.log(`✅ 拉取成功，共 ${models.length} 个模型`);
-      alert(`获取成功：${models.length} 个模型\n已填充到编辑器。`);
-    } catch (e) {
-      this.log(`❌ 拉取失败：${e.message}`, "err");
-      alert(`拉取失败：\n${e.message}\n请检查 API Key / Base URL / 网络代理。`);
-    }
-  },
-
-  // ---------- Detect ----------
-  async runDetect() {
-    const p = this.current; if (!p) return;
-    p.base = document.getElementById("apiBase").value.trim();
-    p.key = document.getElementById("apiKey").value.trim();
-    const text = (document.getElementById("modelsText")?.value || "").trim();
-    if (!text) { alert("请先填写模型列表（每行一个模型 ID）。"); return; }
-    p.models = text.split(/\n+/).map(s => s.trim()).filter(Boolean);
-    this.save();
-
-    document.getElementById("resultCard").style.display = "block";
-    document.getElementById("logCard").style.display = "block";
-    const ids = p.models;
-    this.log(`🚀 开始检测：${p.name}，共 ${ids.length} 个模型`, "warn");
-
-    const results = [];
-    for (let i = 0; i < ids.length; i++) {
-      const m = ids[i];
-      this.log(`▸ [${i+1}/${ids.length}] ${m}`);
-      const r = await this.detectOne(p, m);
-      results.push(r);
-      if (r.error) this.log(`  ❌ ${r.error}`, "err"); else this.log(`  ✅ ${r.time_ms.toFixed(0)} ms`, "ok");
-    }
-    window.__lastResults = results;
-    this.renderResults();
-    this.log("✨ 检测完成。", "ok");
-  },
-
-  async detectOne(p, model) {
-    const base = p.base.replace(/\/$/, "");
-    let url, headers, body;
-    headers = { "Content-Type": "application/json" };
-    if (p.compat === "anthropic") {
-      url = base + "/messages";
-      if (p.key) headers["x-api-key"] = p.key;
-      headers["anthropic-version"] = "2023-06-01";
-      body = { model, max_tokens: 60, messages: [{ role: "user", content: "Say OK in one short sentence." }] };
-    } else if (p.compat === "azure") {
-      const ver = p.azureVer || "2024-02-15-preview";
-      url = `${base}/deployments/${encodeURIComponent(model)}/chat/completions?api-version=${ver}`;
-      if (p.key) headers["api-key"] = p.key;
-      body = { model, messages: [{ role: "user", content: "Say OK in one short sentence." }], max_tokens: 60 };
-    } else {
-      url = base + "/chat/completions";
-      if (p.key) headers["Authorization"] = `Bearer ${p.key}`;
-      body = { model, messages: [{ role: "user", content: "Say OK in one short sentence." }], temperature: 0.4, max_tokens: 60 };
-    }
-    let error = null, firstToken = null;
-    try {
-      const t1 = performance.now();
-      const res = await this.apiCall(url, { method: "POST", headers, body: JSON.stringify(body) });
-      const t2 = performance.now();
-      firstToken = t2 - t1;
-      if (!res.ok) {
-        error = `HTTP ${res.status} ${res.statusText}`;
-        try { const ed = await res.json(); if (ed.error && ed.error.message) error = ed.error.message; } catch(e){}
-      } else if (p.compat !== "anthropic") {
-        const data = await res.json().catch(() => ({}));
-        if (!data.choices || !data.choices[0]) error = "未返回 choices";
-      }
-    } catch (e) { error = e.message || String(e); }
-    const row = {
-      model,
-      time_ms: error ? 9999999 : ((firstToken) ? firstToken : 9999999),
-      firstToken: error ? null : firstToken,
-      error,
-      provider: p.name
-    };
-    // 从 /models 的价格字段补全价格（OpenRouter 等返回 pricing 的厂商）
-    try {
-      const pm = await this.getPriceMap(p);
-      const pr = pm[model];
-      if (pr) {
-        const pi = parseFloat(pr.prompt || pr.input || 0);
-        const co = parseFloat(pr.completion || pr.output || 0);
-        if (!isNaN(pi)) row.priceIn = pi * 1e6;
-        if (!isNaN(co)) row.priceOut = co * 1e6;
-      }
-    } catch(e){}
-    return row;
-  },
-
-  // 每轮检测只拉一次 /models，缓存价格表（仅含 pricing 字段的厂商生效）
-  async getPriceMap(p) {
-    if (this._pm && this._pm.id === p.id) return this._pm.map;
-    const map = {};
-    try {
-      const url = modelsUrl(p.base);
-      const headers = p.key ? { Authorization: `Bearer ${p.key}` } : {};
-      const res = await this.apiCall(url, { headers });
-      if (res.ok) {
-        const data = await res.json().catch(() => null);
-        const lst = Array.isArray(data) ? data : (data && data.data) || [];
-        lst.forEach(x => { if (x && x.id && x.pricing) map[x.id] = x.pricing; });
-      }
-    } catch(e){}
-    this._pm = { id: p.id, map };
-    return map;
-  },
-
-  // ---------- Results ----------
-  renderResults() {
-    const rows = window.__lastResults || [];
-    const tbody = document.getElementById("resultBody");
-    if (!tbody) return;
-    const sortBy = document.getElementById("sortBy")?.value || "speed";
-    let list = rows.slice();
-    if (sortBy === "speed") list.sort((a,b) => a.time_ms - b.time_ms);
-    else if (sortBy === "price") list.sort((a,b) => (a.priceIn??9999999) - (b.priceIn??9999999));
-    else if (sortBy === "price_desc") list.sort((a,b) => (b.priceIn??0) - (a.priceIn??0));
-    else list.sort((a,b) => {
-      const va = a.error ? 1 : 0, vb = b.error ? 1 : 0;
-      if (va !== vb) return va - vb;
-      return a.time_ms - b.time_ms;
-    });
-    document.getElementById("resultCount").textContent = `${list.length} / ${rows.length}`;
-    document.getElementById("resultCount").className = `badge ${rows.some(r => !r.error) ? 'badge-ok' : 'badge-err'}`;
-    tbody.innerHTML = list.map(r => {
-      const cls = r.error ? "badge-err" : "badge-ok";
-      const status = r.error ? "失败" : "可用";
-      const fmtP = (v) => v == null ? "—" : `$${v.toFixed(2)}`;
-      return `<tr>
-        <td><code>${this.esc(r.model)}</code><div style="font-size:11px;color:var(--muted)">${r.provider}</div></td>
-        <td><span class="badge ${cls}">${status}</span></td>
-        <td>${r.firstToken ? r.firstToken.toFixed(0) + ' ms' : '—'}</td>
-        <td>${r.time_ms < 9999999 ? r.time_ms.toFixed(0) + ' ms' : '—'}</td>
-        <td>${fmtP(r.priceIn)}</td>
-        <td>${fmtP(r.priceOut)}</td>
-        <td style="color:var(--muted);font-size:12px">${r.error || ''}</td>
-      </tr>`;
-    }).join("");
-  },
-
-  clearResults() {
-    window.__lastResults = [];
-    if (document.getElementById("resultBody")) document.getElementById("resultBody").innerHTML = "";
-    if (document.getElementById("logBox")) document.getElementById("logBox").innerHTML = "";
-    if (document.getElementById("resultCard")) document.getElementById("resultCard").style.display = "none";
-    if (document.getElementById("logCard")) document.getElementById("logCard").style.display = "none";
-  },
-
-  // ---------- Model picker ----------
-  pickerState: { models: [], selected: new Set(), tab: "all", q: "" },
-
-  async openModelPicker() {
-    const p = this.current; if (!p) return;
-    if (p.compat === "anthropic" || p.compat === "azure") {
-      alert(`${p.name} 不支持模型选择器自动拉取，请在「模型列表」里手动填写模型 ID。`);
-      return;
-    }
-    const base = (document.getElementById("apiBase").value.trim() || p.base).replace(/\/$/, "");
-    const url = modelsUrl(base);
-    const key = document.getElementById("apiKey").value.trim() || p.key;
-    this.log(`打开模型选择器`);
-    try {
-      const headers = {}; if (key) headers["Authorization"] = `Bearer ${key}`;
-      const res = await this.apiCall(url, { headers });
-      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-      const data = await res.json();
-      let raw = [];
-      if (Array.isArray(data)) raw = data;
-      else if (Array.isArray(data.data)) raw = data.data;
-      else if (data.models && Array.isArray(data.models)) raw = data.models;
-      const models = raw.map(m => {
-        const pr = m.pricing || {};
-        const pIn = parseFloat(pr.prompt || "0");
-        const pOut = parseFloat(pr.completion || "0");
-        const arch = m.architecture || {};
-        const inMod = arch.input_modalities || [];
-        const outMod = arch.output_modalities || [];
-        const id = m.id || m.name || "";
-        const provider = id.includes("/") ? id.split("/")[0] : "other";
-        const isFree = (pIn === 0 && pOut === 0) || /:free$/.test(id);
-        const isVision = inMod.includes("image");
-        const isEmbed = /embed/i.test(id) || arch.modality === "embedding";
-        const isRerank = /rerank/i.test(id);
-        const isWeb = /(web|search|online|perplexity|brave)/i.test(id);
-        const isTool = /(tool|agent|function)/i.test(id);
-        const isInfer = !isEmbed && !isRerank && outMod.includes("text");
-        return { id, name: m.name || id, provider, isFree, isVision, isEmbed, isRerank, isWeb, isTool, isInfer, priceIn: pIn * 1e6, priceOut: pOut * 1e6 };
-      }).filter(m => m.id);
-      this.pickerState.models = models;
-      this.pickerState.selected = new Set(p.models || []);
-      this.pickerState.tab = "all";
-      this.pickerState.q = "";
-      this.renderModelPicker();
-      document.getElementById("modelPickerModal").classList.add("show");
-    } catch (e) {
-      this.log(`❌ 拉取模型失败：${e.message}`, "err");
-      alert(`拉取模型失败：\n${e.message}`);
-    }
-  },
-
-  renderModelPicker() {
-    const ps = this.pickerState;
-    const q = (ps.q || "").trim().toLowerCase();
-    const list = ps.models.filter(m => {
-      if (q && !(m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q))) return false;
-      if (ps.tab === "all") return true;
-      if (ps.tab === "free") return m.isFree;
-      if (ps.tab === "vision") return m.isVision;
-      if (ps.tab === "infer") return m.isInfer;
-      if (ps.tab === "embed") return m.isEmbed;
-      if (ps.tab === "rerank") return m.isRerank;
-      if (ps.tab === "web") return m.isWeb;
-      if (ps.tab === "tool") return m.isTool;
-      return true;
-    });
-    const groups = {};
-    list.forEach(m => { (groups[m.provider] = groups[m.provider] || []).push(m); });
-    const body = document.getElementById("pickerBody");
-    if (!body) return;
-    if (!list.length) { body.innerHTML = `<div style="padding:24px;text-align:center;color:var(--muted)">无匹配模型</div>`; return; }
-    const sorted = Object.keys(groups).sort((a, b) => a.localeCompare(b));
-    body.innerHTML = sorted.map(prov => `
-      <div class="modal-group">
-        <div class="modal-group-header" onclick="app.toggleGroup('${prov}')">
-          <span>▾</span> <span>${this.esc(prov)}</span>
-          <span class="modal-group-badge">${groups[prov].length}</span>
-          <button class="modal-group-minus" onclick="event.stopPropagation();app.groupSelect('${prov}',true)">全选</button>
-        </div>
-        <div id="grp-${prov}">
-          ${groups[prov].map(m => `
-            <label class="modal-model">
-              <input type="checkbox" ${ps.selected.has(m.id) ? "checked" : ""} onchange="app.togglePickerModel('${this.esc(m.id)}', this.checked)">
-              <div>
-                <div class="mm-name">${this.esc(m.name)}</div>
-                <div class="mm-id">${this.esc(m.id)}</div>
-              </div>
-              ${m.isFree ? '<span class="mm-free">免费</span>' : ""}
-              <span class="mm-price">${m.priceIn != null ? "$" + m.priceIn.toFixed(2) + " / " + m.priceOut.toFixed(2) : ""}</span>
-            </label>`).join("")}
-        </div>
-      </div>`).join("");
-  },
-
-  setPickerTab(tab, el) {
-    this.pickerState.tab = tab;
-    document.querySelectorAll(".modal-tab").forEach(t => t.classList.remove("active"));
-    el.classList.add("active");
-    this.renderModelPicker();
-  },
-
-  togglePickerModel(id, v) {
-    if (v) this.pickerState.selected.add(id); else this.pickerState.selected.delete(id);
-    const c = document.getElementById("pickerCount");
-    if (c) c.textContent = `${this.pickerState.selected.size} 已选`;
-  },
-
-  groupSelect(prov, v) {
-    this.pickerState.models.filter(m => m.provider === prov).forEach(m => {
-      if (v) this.pickerState.selected.add(m.id); else this.pickerState.selected.delete(m.id);
-    });
-    this.renderModelPicker();
-  },
-
-  toggleGroup(prov) {
-    const el = document.getElementById("grp-" + prov);
-    if (el) el.style.display = el.style.display === "none" ? "" : "none";
-  },
-
-  closeModelPicker() {
-    const el = document.getElementById("modelPickerModal");
-    if (el) el.classList.remove("show");
-  },
-
-  confirmModelPicker() {
-    const p = this.current; if (!p) return;
-    p.models = Array.from(this.pickerState.selected);
-    const ta = document.getElementById("modelsText");
-    if (ta) ta.value = p.models.join("\n");
-    this.save();
-    this.closeModelPicker();
-    this.log(`✅ 已选 ${p.models.length} 个模型`);
-  },
-
-  // ---------- Helpers ----------
-  save() { ls.set("mb_platforms", this.platforms); },
-  saveSettings() { ls.set("mb_useProxy", this.useProxy); ls.set("mb_proxyUrl", this.proxyUrl); },
-  log(msg, type) { const el = document.getElementById("logBox"); if (!el) return; const d = new Date(); const s = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`; const line = document.createElement("div"); line.className = type || ""; line.textContent = `[${s}] ${msg}`; el.appendChild(line); el.scrollTop = el.scrollHeight; },
-  esc(s) { return String(s||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); },
-  openHelp() {
-    alert("使用说明\n\n1. 本地（server.py）：双击 public/index.html，无需代理。\n2. Cloudflare：部署 Worker 后，页面自动用同域 /proxy 代理。\n3. 填 API 密钥 + Base URL，模型列表每行一个 ID，或「自动拉取」。\n4. 点「检测」：逐条请求 chat/completions，看可用性和速度。\n5. OpenRouter 自动补全价格。\n\n密钥只存浏览器 localStorage，不会上传。");
-  }
-};
-
-app.init();
+fetch("/api/results").then(r => r.json()).then(doc => {
+  rows = doc.results || [];
+  document.getElementById("updated").textContent = doc.updatedAt
+    ? "上次跑分：" + new Date(doc.updatedAt).toLocaleString("zh-CN")
+    : "还没有跑分数据（等第一次定时任务，或用 /api/run 手动触发）";
+  const quotas = {};
+  rows.forEach(r => { if (r.quota) quotas[r.providerName] = r.quota; });
+  document.getElementById("quota").innerHTML = Object.entries(quotas)
+    .map(([n, q]) => `<div><b>${n}</b> — ${q}</div>`).join("")
+    || "暂无数据";
+  render();
+}).catch(() => {
+  document.getElementById("updated").textContent =
+    "读取失败 — 本地直接打开文件看不到数据，请用 wrangler dev 或部署后访问";
+});
 </script>
 </body>
 </html>

@@ -11,3 +11,14 @@ binding = "ASSETS"
 # routes = [
 #   { pattern = "bench.yourdomain.com", custom_domain = true }
 # ]
+
+# 定时跑分：每 6 小时一次
+[triggers]
+crons = ["0 */6 * * *"]
+
+# 跑分结果存储。部署前运行：
+#   wrangler kv namespace create BENCH_KV
+# 然后把输出的 id 填到下面
+[[kv_namespaces]]
+binding = "BENCH_KV"
+id = "REPLACE_WITH_YOUR_KV_ID"
