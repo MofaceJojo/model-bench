@@ -1,0 +1,13 @@
+name = "model-bench"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+# Serve the static app from ./public and let worker.js handle /proxy
+[assets]
+directory = "public"
+binding = "ASSETS"
+
+# Optional: bind to your own Cloudflare domain
+# routes = [
+#   { pattern = "bench.yourdomain.com", custom_domain = true }
+# ]
