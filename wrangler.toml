@@ -21,4 +21,4 @@ crons = ["0 */6 * * *"]
 # 然后把输出的 id 填到下面
 [[kv_namespaces]]
 binding = "BENCH_KV"
-id = "REPLACE_WITH_YOUR_KV_ID"
+id = "44aeb042d27a4c69817c828afdb0ee88"
