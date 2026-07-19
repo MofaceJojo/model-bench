@@ -12,13 +12,14 @@
   .wrap { max-width: 960px; margin: 0 auto; }
   h1 { font-size: 22px; margin-bottom: 4px; }
   .sub { color: #8b93a5; font-size: 13px; margin-bottom: 20px; }
-  .sub a { color: #10b981; text-decoration: none; }
+  a { color: #10b981; text-decoration: none; }
+  a:hover { text-decoration: underline; }
   .updated { font-size: 12px; color: #8b93a5; margin-bottom: 12px; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #232735; }
-  th { color: #8b93a5; font-weight: 500; font-size: 12px; cursor: pointer;
-       user-select: none; white-space: nowrap; }
-  th:hover { color: #e2e5ec; }
+  th { color: #8b93a5; font-weight: 500; font-size: 12px; white-space: nowrap; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: #e2e5ec; }
   th .arrow { opacity: .6; }
   td.num { font-variant-numeric: tabular-nums; }
   .rank { color: #8b93a5; width: 34px; }
@@ -28,9 +29,18 @@
   .err { color: #ef4444; font-size: 12px; }
   .tbl-scroll { overflow-x: auto; }
   h2 { font-size: 16px; margin: 36px 0 10px; }
-  .quota-list { font-size: 13px; line-height: 1.9; color: #b8bfce; }
-  .quota-list b { color: #e2e5ec; }
+  .hint { font-size: 12px; color: #8b93a5; margin-bottom: 10px; }
   .empty { padding: 40px 0; text-align: center; color: #8b93a5; }
+  .ok-badge { color: #10b981; font-size: 12px; white-space: nowrap; }
+  .no-badge { color: #8b93a5; font-size: 12px; white-space: nowrap; }
+  .quota-cell { font-size: 12px; color: #b8bfce; }
+  button { background: #1c2130; color: #e2e5ec; border: 1px solid #2e3446;
+           border-radius: 6px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
+  button:hover { border-color: #10b981; }
+  #catalog-list { font-size: 13px; line-height: 1.9; color: #b8bfce;
+                  columns: 2; column-gap: 32px; }
+  @media (max-width: 640px) { #catalog-list { columns: 1; } }
+  .ctx { color: #626b7f; font-size: 11px; }
 </style>
 </head>
 <body>
@@ -38,21 +48,37 @@
   <h1>免费大模型速度排行榜</h1>
   <div class="sub">自动定时实测各家免费 API 的首字延迟与生成速度 ·
     <a href="tool.html">用自己的 Key 手动测 →</a></div>
+
   <div class="updated" id="updated">加载中…</div>
   <div class="tbl-scroll">
     <table>
       <thead><tr>
         <th class="rank">#</th>
-        <th data-k="providerName">厂商 <span class="arrow"></span></th>
-        <th data-k="model">模型 <span class="arrow"></span></th>
-        <th data-k="ttft">首字延迟 <span class="arrow">▲</span></th>
-        <th data-k="tps">生成速度 <span class="arrow"></span></th>
+        <th class="sortable" data-k="providerName">厂商 <span class="arrow"></span></th>
+        <th class="sortable" data-k="model">模型 <span class="arrow"></span></th>
+        <th class="sortable" data-k="ttft">首字延迟 <span class="arrow">▲</span></th>
+        <th class="sortable" data-k="tps">生成速度 <span class="arrow"></span></th>
       </tr></thead>
       <tbody id="tbody"><tr><td colspan="5" class="empty">加载中…</td></tr></tbody>
     </table>
   </div>
-  <h2>各家免费额度一览</h2>
-  <div class="quota-list" id="quota"></div>
+  <div class="hint">🏆 = 该厂商中生成速度最快的模型</div>
+
+  <h2>免费资源目录 — 去哪里领免费额度</h2>
+  <div class="hint">这些厂商都提供免费 API 额度。点「去申请」注册拿 Key，配置进本站后自动加入跑分。</div>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr>
+        <th>厂商</th><th>免费额度</th><th>申请</th><th>跑分状态</th>
+      </tr></thead>
+      <tbody id="dir-tbody"><tr><td colspan="4" class="empty">加载中…</td></tr></tbody>
+    </table>
+  </div>
+
+  <h2>免费模型大全（无需 Key，实时拉取）</h2>
+  <div class="hint">来自 OpenRouter 公开列表——所有输入/输出价格为 0 的模型，覆盖各大厂的免费开放版本。</div>
+  <button id="catalog-btn">加载当前全部免费模型</button>
+  <div id="catalog-list" style="margin-top:12px"></div>
 </div>
 <script>
 let rows = [], sortKey = "ttft", sortAsc = true;
@@ -71,10 +97,16 @@ function render() {
   }
   const minTtft = Math.min(...ok.map(r => r.ttft));
   const maxTps = Math.max(...ok.map(r => r.tps));
+  // 每家厂商速度最快的模型 → 🏆
+  const bestOfProvider = {};
+  ok.forEach(r => {
+    if (!bestOfProvider[r.provider] || r.tps > bestOfProvider[r.provider].tps)
+      bestOfProvider[r.provider] = r;
+  });
   tbody.innerHTML = ok.map((r, i) => `<tr>
       <td class="rank">${i + 1}</td>
       <td><span class="prov">${r.providerName}</span></td>
-      <td class="model">${r.model}</td>
+      <td class="model">${bestOfProvider[r.provider] === r ? "🏆 " : ""}${r.model}</td>
       <td class="num ${r.ttft === minTtft ? "fast" : ""}">${r.ttft} ms</td>
       <td class="num ${r.tps === maxTps ? "fast" : ""}">${r.tps} tok/s</td>
     </tr>`).join("") +
@@ -101,17 +133,48 @@ fetch("/api/results").then(r => r.json()).then(doc => {
   rows = doc.results || [];
   document.getElementById("updated").textContent = doc.updatedAt
     ? "上次跑分：" + new Date(doc.updatedAt).toLocaleString("zh-CN")
-    : "还没有跑分数据（等第一次定时任务，或用 /api/run 手动触发）";
-  const quotas = {};
-  rows.forEach(r => { if (r.quota) quotas[r.providerName] = r.quota; });
-  document.getElementById("quota").innerHTML = Object.entries(quotas)
-    .map(([n, q]) => `<div><b>${n}</b> — ${q}</div>`).join("")
-    || "暂无数据";
+    : "还没有跑分数据（等下一次整点定时任务，或用 /api/run 手动触发）";
   render();
 }).catch(() => {
   document.getElementById("updated").textContent =
     "读取失败 — 本地直接打开文件看不到数据，请用 wrangler dev 或部署后访问";
 });
+
+// 免费资源目录
+fetch("/api/directory").then(r => r.json()).then(dir => {
+  document.getElementById("dir-tbody").innerHTML = dir.map(d => `<tr>
+      <td>${d.name}</td>
+      <td class="quota-cell">${d.quota}</td>
+      <td><a href="${d.applyUrl}" target="_blank" rel="noopener">去申请 ↗</a></td>
+      <td>${d.configured
+        ? '<span class="ok-badge">✓ 已接入</span>'
+        : '<span class="no-badge">未配置 Key（' + d.secretName + '）</span>'}</td>
+    </tr>`).join("");
+}).catch(() => {
+  document.getElementById("dir-tbody").innerHTML =
+    '<tr><td colspan="4" class="empty">读取失败</td></tr>';
+});
+
+// 免费模型大全：OpenRouter 公开接口，无需 Key
+document.getElementById("catalog-btn").onclick = async function () {
+  this.textContent = "加载中…"; this.disabled = true;
+  try {
+    const resp = await fetch("/proxy?url=" +
+      encodeURIComponent("https://openrouter.ai/api/v1/models"));
+    const { data = [] } = await resp.json();
+    const free = data
+      .filter(m => Number(m.pricing?.prompt) === 0 && Number(m.pricing?.completion) === 0)
+      .sort((a, b) => (b.created || 0) - (a.created || 0));
+    this.style.display = "none";
+    document.getElementById("catalog-list").innerHTML =
+      `<div style="margin-bottom:8px;color:#e2e5ec">共 <b>${free.length}</b> 个免费模型（按上架时间排序）：</div>` +
+      free.map(m =>
+        `<div>${m.id} <span class="ctx">${m.context_length ? Math.round(m.context_length / 1000) + "k 上下文" : ""}</span></div>`
+      ).join("");
+  } catch (e) {
+    this.textContent = "加载失败，点击重试"; this.disabled = false;
+  }
+};
 </script>
 </body>
 </html>

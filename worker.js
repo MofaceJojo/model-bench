@@ -52,27 +52,48 @@ function json(body, status = 200) {
 const BENCH_TARGETS = [
   { id: "openrouter", name: "OpenRouter", secret: "OPENROUTER_KEY",
     base: "https://openrouter.ai/api/v1", discover: true,
+    applyUrl: "https://openrouter.ai/keys",
     quota: "免费模型每天 50 次请求（历史充值满 $10 提升到 1000 次/天）" },
   { id: "groq", name: "Groq", secret: "GROQ_KEY",
     base: "https://api.groq.com/openai/v1",
     models: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
+    applyUrl: "https://console.groq.com/keys",
     quota: "免费层按模型限次，常用模型约 1000+ 次/天，速度极快" },
   { id: "gemini", name: "Google Gemini", secret: "GEMINI_KEY",
     base: "https://generativelanguage.googleapis.com/v1beta/openai",
     models: ["gemini-2.0-flash", "gemini-2.5-flash"],
+    applyUrl: "https://aistudio.google.com/apikey",
     quota: "免费层 Flash 系列每天约 1500 次请求（以官网为准）" },
   { id: "siliconflow", name: "硅基流动", secret: "SILICONFLOW_KEY",
     base: "https://api.siliconflow.cn/v1",
     models: ["Qwen/Qwen2.5-7B-Instruct", "THUDM/glm-4-9b-chat"],
+    applyUrl: "https://cloud.siliconflow.cn",
     quota: "注册送额度；带 (free) 标记的小模型长期免费" },
   { id: "zhipu", name: "智谱", secret: "ZHIPU_KEY",
     base: "https://open.bigmodel.cn/api/paas/v4",
     models: ["glm-4-flash"],
+    applyUrl: "https://open.bigmodel.cn",
     quota: "glm-4-flash 长期免费，不限总量（有并发限制）" },
   { id: "mistral", name: "Mistral", secret: "MISTRAL_KEY",
     base: "https://api.mistral.ai/v1",
     models: ["mistral-small-latest"],
+    applyUrl: "https://console.mistral.ai",
     quota: "免费实验层限 1 请求/秒" },
+  { id: "cerebras", name: "Cerebras", secret: "CEREBRAS_KEY",
+    base: "https://api.cerebras.ai/v1",
+    models: ["llama-3.3-70b"],
+    applyUrl: "https://cloud.cerebras.ai",
+    quota: "免费层每天百万级 token，速度媲美 Groq" },
+  { id: "nvidia", name: "NVIDIA NIM", secret: "NVIDIA_KEY",
+    base: "https://integrate.api.nvidia.com/v1",
+    models: ["meta/llama-3.3-70b-instruct"],
+    applyUrl: "https://build.nvidia.com",
+    quota: "注册送 1000 积分（约 1000 次请求）" },
+  { id: "github", name: "GitHub Models", secret: "GITHUB_MODELS_TOKEN",
+    base: "https://models.github.ai/inference",
+    models: ["openai/gpt-4o-mini"],
+    applyUrl: "https://github.com/settings/tokens",
+    quota: "GitHub 账号即可用，按账号等级每天限次（PAT 需勾选 models 权限）" },
 ];
 
 const DISCOVER_CAP = 10;   // OpenRouter 自动发现的免费模型最多测这么多
@@ -178,6 +199,14 @@ export default {
     // CORS preflight
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: CORS });
+    }
+
+    // ---- 免费资源目录：厂商、额度、申请链接、Key 配置状态（不暴露 Key 本身）----
+    if (url.pathname === "/api/directory") {
+      return json(BENCH_TARGETS.map((t) => ({
+        id: t.id, name: t.name, quota: t.quota, applyUrl: t.applyUrl,
+        secretName: t.secret, configured: !!env[t.secret],
+      })));
     }
 
     // ---- 排行榜数据 ----
