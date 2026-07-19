@@ -49,6 +49,18 @@
   <div class="sub">自动定时实测各家免费 API 的首字延迟与生成速度 ·
     <a href="tool.html">用自己的 Key 手动测 →</a></div>
 
+  <h2 style="margin-top:0">免费资源目录 — 去哪里领免费额度</h2>
+  <div class="hint">这些厂商都提供免费 API 额度。点「去申请」注册拿 Key，配置进本站后自动加入跑分。</div>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr>
+        <th>厂商</th><th>免费额度</th><th>申请</th><th>跑分状态</th>
+      </tr></thead>
+      <tbody id="dir-tbody"><tr><td colspan="4" class="empty">加载中…</td></tr></tbody>
+    </table>
+  </div>
+
+  <h2>速度排行榜</h2>
   <div class="updated" id="updated">加载中…</div>
   <div class="tbl-scroll">
     <table>
@@ -63,17 +75,6 @@
     </table>
   </div>
   <div class="hint">🏆 = 该厂商中生成速度最快的模型</div>
-
-  <h2>免费资源目录 — 去哪里领免费额度</h2>
-  <div class="hint">这些厂商都提供免费 API 额度。点「去申请」注册拿 Key，配置进本站后自动加入跑分。</div>
-  <div class="tbl-scroll">
-    <table>
-      <thead><tr>
-        <th>厂商</th><th>免费额度</th><th>申请</th><th>跑分状态</th>
-      </tr></thead>
-      <tbody id="dir-tbody"><tr><td colspan="4" class="empty">加载中…</td></tr></tbody>
-    </table>
-  </div>
 
   <h2>免费模型大全（无需 Key，实时拉取）</h2>
   <div class="hint">来自 OpenRouter 公开列表——所有输入/输出价格为 0 的模型，覆盖各大厂的免费开放版本。</div>
@@ -145,7 +146,7 @@ fetch("/api/directory").then(r => r.json()).then(dir => {
   document.getElementById("dir-tbody").innerHTML = dir.map(d => `<tr>
       <td>${d.name}</td>
       <td class="quota-cell">${d.quota}</td>
-      <td><a href="${d.applyUrl}" target="_blank" rel="noopener">去申请 ↗</a></td>
+      <td style="white-space:nowrap"><a href="${d.applyUrl}" target="_blank" rel="noopener">去申请 ↗</a></td>
       <td>${d.configured
         ? '<span class="ok-badge">✓ 已接入</span>'
         : '<span class="no-badge">未配置 Key（' + d.secretName + '）</span>'}</td>
