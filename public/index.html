@@ -50,7 +50,7 @@
     <a href="tool.html">用自己的 Key 手动测 →</a></div>
 
   <h2 style="margin-top:0">免费资源目录 — 去哪里领免费额度</h2>
-  <div class="hint">这些厂商都提供免费 API 额度。点「去申请」注册拿 Key，配置进本站后自动加入跑分。</div>
+  <div class="hint">这些厂商都提供免费 API 额度，点「去申请」即可注册领取自己的 Key。「✓ 已上榜」的厂商会出现在下方速度排行榜里。</div>
   <div class="tbl-scroll">
     <table>
       <thead><tr>
@@ -148,8 +148,8 @@ fetch("/api/directory").then(r => r.json()).then(dir => {
       <td class="quota-cell">${d.quota}</td>
       <td style="white-space:nowrap"><a href="${d.applyUrl}" target="_blank" rel="noopener">去申请 ↗</a></td>
       <td>${d.configured
-        ? '<span class="ok-badge">✓ 已接入</span>'
-        : '<span class="no-badge">未配置 Key（' + d.secretName + '）</span>'}</td>
+        ? '<span class="ok-badge">✓ 已上榜</span>'
+        : '<span class="no-badge">待接入</span>'}</td>
     </tr>`).join("");
 }).catch(() => {
   document.getElementById("dir-tbody").innerHTML =
