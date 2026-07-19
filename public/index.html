@@ -68,13 +68,14 @@
         <th class="rank">#</th>
         <th class="sortable" data-k="providerName">厂商 <span class="arrow"></span></th>
         <th class="sortable" data-k="model">模型 <span class="arrow"></span></th>
+        <th class="sortable" data-k="tier">能力 <span class="arrow"></span></th>
         <th class="sortable" data-k="ttft">首字延迟 <span class="arrow">▲</span></th>
         <th class="sortable" data-k="tps">生成速度 <span class="arrow"></span></th>
       </tr></thead>
-      <tbody id="tbody"><tr><td colspan="5" class="empty">加载中…</td></tr></tbody>
+      <tbody id="tbody"><tr><td colspan="6" class="empty">加载中…</td></tr></tbody>
     </table>
   </div>
-  <div class="hint">🏆 = 该厂商中生成速度最快的模型</div>
+  <div class="hint">🏆 = 该厂商中生成速度最快的模型 · 能力档位（旗舰＞强＞中＞轻量）为参考公开评测的人工标注，仅供参考</div>
 
   <h2>免费模型大全（无需 Key，实时拉取）</h2>
   <div class="hint">来自 OpenRouter 公开列表——所有输入/输出价格为 0 的模型，覆盖各大厂的免费开放版本。</div>
@@ -83,17 +84,19 @@
 </div>
 <script>
 let rows = [], sortKey = "ttft", sortAsc = true;
+const TIER_RANK = { "旗舰": 0, "强": 1, "中": 2, "轻量": 3 };
 
 function render() {
   const ok = rows.filter(r => r.ok).sort((a, b) => {
-    const va = a[sortKey], vb = b[sortKey];
+    let va = a[sortKey], vb = b[sortKey];
+    if (sortKey === "tier") { va = TIER_RANK[va] ?? 9; vb = TIER_RANK[vb] ?? 9; }
     const cmp = typeof va === "string" ? String(va).localeCompare(String(vb)) : va - vb;
     return sortAsc ? cmp : -cmp;
   });
   const bad = rows.filter(r => !r.ok);
   const tbody = document.getElementById("tbody");
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty">暂无数据 — 第一轮跑分完成后这里会出现榜单</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">暂无数据 — 第一轮跑分完成后这里会出现榜单</td></tr>';
     return;
   }
   const minTtft = Math.min(...ok.map(r => r.ttft));
@@ -108,6 +111,7 @@ function render() {
       <td class="rank">${i + 1}</td>
       <td><span class="prov">${r.providerName}</span></td>
       <td class="model">${bestOfProvider[r.provider] === r ? "🏆 " : ""}${r.model}</td>
+      <td>${r.tier || "—"}</td>
       <td class="num ${r.ttft === minTtft ? "fast" : ""}">${r.ttft} ms</td>
       <td class="num ${r.tps === maxTps ? "fast" : ""}">${r.tps} tok/s</td>
     </tr>`).join("") +
@@ -115,7 +119,7 @@ function render() {
       <td class="rank">–</td>
       <td><span class="prov">${r.providerName}</span></td>
       <td class="model">${r.model}</td>
-      <td colspan="2" class="err">${r.error || "失败"}</td>
+      <td colspan="3" class="err">${r.error || "失败"}</td>
     </tr>`).join("");
   document.querySelectorAll("th[data-k]").forEach(th => {
     th.querySelector(".arrow").textContent =

@@ -96,6 +96,19 @@ const BENCH_TARGETS = [
     quota: "GitHub 账号即可用，按账号等级每天限次（PAT 需勾选 models 权限）" },
 ];
 
+// 能力档位：人工维护的静态标注（参考公开评测），按顺序首个命中生效。
+// ponytail: 正则猜档位，认不出的落到「中」，看到标错来这里补规则
+const TIER_RULES = [
+  [/405b|235b|670b|550b|deepseek-r1|deepseek.*(v3|chat)|grok-[34]|gpt-4o(?!-mini)|gpt-4\.1(?!-mini|-nano)|gemini-2\.5-pro|glm-4\.[56]|qwen3?-max|hunyuan-large|ultra/i, "旗舰"],
+  [/70b|72b|49b|32b|30b|27b|24b|gemini-2\.[05]-flash(?!-lite)|mistral-small|gpt-4o-mini|gpt-4\.1-mini|qwq|glm-4-air|command|step-2|hy3/i, "强"],
+  [/2[0-2]b|1[0-6]b|[7-9]b|glm-4-flash|gemma|phi|flash-lite/i, "中"],
+  [/[1-6]b|nano|mini|tiny|lite|safety/i, "轻量"],
+];
+function tierOf(model) {
+  for (const [re, tier] of TIER_RULES) if (re.test(model)) return tier;
+  return "中";
+}
+
 const DISCOVER_CAP = 10;   // OpenRouter 自动发现的免费模型最多测这么多
 const BENCH_TIMEOUT = 20000;
 const BENCH_PROMPT = "用不超过50个字介绍一下你自己。";
@@ -184,7 +197,7 @@ async function runBench(env) {
     }
     for (const model of models) {
       const r = await benchOne(t.base, key, model);
-      results.push({ provider: t.id, providerName: t.name, quota: t.quota, ...r });
+      results.push({ provider: t.id, providerName: t.name, quota: t.quota, tier: tierOf(model), ...r });
     }
   }
   const doc = { updatedAt: new Date().toISOString(), results };
