@@ -22,6 +22,8 @@ const ALLOWED_HOSTS = [
   "api.stepfun.com",
   "qianfan.baidubce.com",
   "integrate.api.nvidia.com",
+  "api.cerebras.ai",
+  "models.github.ai",
   "api.novita.ai",
   "api.ppio.cn",
   "api.moonshot.cn",
@@ -64,12 +66,12 @@ const BENCH_TARGETS = [
     models: ["gemini-2.0-flash", "gemini-2.5-flash"],
     applyUrl: "https://aistudio.google.com/apikey",
     quota: "免费层 Flash 系列每天约 1500 次请求（以官网为准）" },
-  { id: "siliconflow", name: "硅基流动", secret: "SILICONFLOW_KEY",
+  { id: "siliconflow", cn: true, name: "硅基流动", secret: "SILICONFLOW_KEY",
     base: "https://api.siliconflow.cn/v1",
     models: ["Qwen/Qwen2.5-7B-Instruct", "THUDM/glm-4-9b-chat"],
     applyUrl: "https://cloud.siliconflow.cn",
     quota: "注册送额度；带 (free) 标记的小模型长期免费" },
-  { id: "zhipu", name: "智谱", secret: "ZHIPU_KEY",
+  { id: "zhipu", cn: true, name: "智谱", secret: "ZHIPU_KEY",
     base: "https://open.bigmodel.cn/api/paas/v4",
     models: ["glm-4-flash"],
     applyUrl: "https://open.bigmodel.cn",
@@ -94,6 +96,32 @@ const BENCH_TARGETS = [
     models: ["openai/gpt-4o-mini"],
     applyUrl: "https://github.com/settings/tokens",
     quota: "GitHub 账号即可用，按账号等级每天限次（PAT 需勾选 models 权限）" },
+  // --- 国内厂商：手机号注册即可，境内直连无障碍 ---
+  { id: "aliyun", cn: true, name: "阿里云百炼", secret: "ALIYUN_KEY",
+    base: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    models: ["qwen-turbo", "qwen-plus"],
+    applyUrl: "https://bailian.console.aliyun.com",
+    quota: "通义千问系列各送 100 万 token（首次开通，有效期半年）" },
+  { id: "volcengine", cn: true, name: "火山方舟", secret: "VOLCENGINE_KEY",
+    base: "https://ark.cn-beijing.volces.com/api/v3",
+    models: ["doubao-lite-4k"],
+    applyUrl: "https://console.volcengine.com/ark",
+    quota: "豆包系列每个模型送 50 万 token" },
+  { id: "moonshot", cn: true, name: "月之暗面 Kimi", secret: "MOONSHOT_KEY",
+    base: "https://api.moonshot.cn/v1",
+    models: ["moonshot-v1-8k"],
+    applyUrl: "https://platform.moonshot.cn",
+    quota: "注册送 15 元额度，长文本能力强" },
+  { id: "baidu", cn: true, name: "百度千帆", secret: "BAIDU_KEY",
+    base: "https://qianfan.baidubce.com/v2",
+    models: ["ernie-speed-128k", "ernie-lite-8k"],
+    applyUrl: "https://console.bce.baidu.com/qianfan",
+    quota: "ERNIE Speed / Lite 系列长期免费" },
+  { id: "tencent", cn: true, name: "腾讯混元", secret: "TENCENT_KEY",
+    base: "https://api.hunyuan.cloud.tencent.com/v1",
+    models: ["hunyuan-lite"],
+    applyUrl: "https://console.cloud.tencent.com/hunyuan",
+    quota: "hunyuan-lite 长期免费，不限量" },
 ];
 
 // 能力档位：人工维护的静态标注（参考公开评测），按顺序首个命中生效。
@@ -217,7 +245,7 @@ export default {
     // ---- 免费资源目录：厂商、额度、申请链接、Key 配置状态（不暴露 Key 本身）----
     if (url.pathname === "/api/directory") {
       return json(BENCH_TARGETS.map((t) => ({
-        id: t.id, name: t.name, quota: t.quota, applyUrl: t.applyUrl,
+        id: t.id, name: t.name, quota: t.quota, applyUrl: t.applyUrl, cn: !!t.cn,
         secretName: t.secret, configured: !!env[t.secret],
       })));
     }

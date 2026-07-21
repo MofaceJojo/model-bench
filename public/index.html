@@ -34,6 +34,8 @@
   .ok-badge { color: #10b981; font-size: 12px; white-space: nowrap; }
   .no-badge { color: #8b93a5; font-size: 12px; white-space: nowrap; }
   .quota-cell { font-size: 12px; color: #b8bfce; }
+  .cn-badge { font-size: 11px; color: #10b981; border: 1px solid #1d5c46;
+              border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
   button { background: #1c2130; color: #e2e5ec; border: 1px solid #2e3446;
            border-radius: 6px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
   button:hover { border-color: #10b981; }
@@ -75,7 +77,8 @@
       <tbody id="tbody"><tr><td colspan="6" class="empty">加载中…</td></tr></tbody>
     </table>
   </div>
-  <div class="hint">🏆 = 该厂商中生成速度最快的模型 · 能力档位（旗舰＞强＞中＞轻量）为参考公开评测的人工标注，仅供参考</div>
+  <div class="hint">🏆 = 该厂商中生成速度最快的模型 · 能力档位（旗舰＞强＞中＞轻量）为参考公开评测的人工标注，仅供参考<br>
+    延迟数据自 Cloudflare 边缘节点测得，非你所在网络。Groq、Gemini、OpenRouter 等境外厂商在中国大陆通常无法直连，实测体验以自己网络为准；标「境内直连」的厂商无此问题。</div>
 
   <h2>免费模型大全（无需 Key，实时拉取）</h2>
   <div class="hint">来自 OpenRouter 公开列表——所有输入/输出价格为 0 的模型，覆盖各大厂的免费开放版本。</div>
@@ -148,7 +151,7 @@ fetch("/api/results").then(r => r.json()).then(doc => {
 // 免费资源目录
 fetch("/api/directory").then(r => r.json()).then(dir => {
   document.getElementById("dir-tbody").innerHTML = dir.map(d => `<tr>
-      <td>${d.name}</td>
+      <td>${d.name}${d.cn ? ' <span class="cn-badge">境内直连</span>' : ""}</td>
       <td class="quota-cell">${d.quota}</td>
       <td style="white-space:nowrap"><a href="${d.applyUrl}" target="_blank" rel="noopener">去申请 ↗</a></td>
       <td>${d.configured
