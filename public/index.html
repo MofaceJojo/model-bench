@@ -36,6 +36,11 @@
   .quota-cell { font-size: 12px; color: #b8bfce; }
   .cn-badge { font-size: 11px; color: #10b981; border: 1px solid #1d5c46;
               border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
+  .ov-badge { font-size: 11px; color: #f59e0b; border: 1px solid #6b4a12;
+              border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
+  .filter-row { display: flex; align-items: center; gap: 6px; font-size: 13px;
+                color: #b8bfce; margin: 4px 0 12px; cursor: pointer; }
+  .filter-row input { accent-color: #10b981; cursor: pointer; }
   button { background: #1c2130; color: #e2e5ec; border: 1px solid #2e3446;
            border-radius: 6px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
   button:hover { border-color: #10b981; }
@@ -69,6 +74,9 @@
 
   <h2 style="margin-top:0">免费资源目录 — 去哪里领免费额度</h2>
   <div class="hint">这些厂商都提供免费 API 额度，点「去申请」即可注册领取自己的 Key。「✓ 已上榜」的厂商会出现在下方速度排行榜里。</div>
+  <label class="filter-row">
+    <input type="checkbox" id="cn-only"> 只看国内可直连（不用梯子）
+  </label>
   <div class="tbl-scroll">
     <table>
       <thead><tr>
@@ -76,6 +84,11 @@
       </tr></thead>
       <tbody id="dir-tbody"><tr><td colspan="4" class="empty">加载中…</td></tr></tbody>
     </table>
+  </div>
+  <div class="hint" style="margin-top:8px">
+    <span class="cn-badge">境内直连</span> 国内网络可直接访问 ·
+    <span class="ov-badge">境外</span> 国内通常需要代理才能访问官网和 API；
+    但本站的 <code>/proxy</code> 已代为中转，在 <a href="tool.html">自测工具</a> 里可直接调用。
   </div>
 
   <h2>速度排行榜</h2>
@@ -132,7 +145,7 @@ function render() {
   });
   tbody.innerHTML = ok.map((r, i) => `<tr>
       <td class="rank">${i + 1}</td>
-      <td><span class="prov">${r.providerName}</span></td>
+      <td><span class="prov">${r.providerName}</span>${r.cn === false ? ' <span class="ov-badge">境外</span>' : ""}</td>
       <td class="model">${bestOfProvider[r.provider] === r ? "🏆 " : ""}${r.model}</td>
       <td>${r.tier || "—"}</td>
       <td class="num ${r.ttft === minTtft ? "fast" : ""}">${r.ttft} ms</td>
@@ -169,19 +182,32 @@ fetch("/api/results").then(r => r.json()).then(doc => {
 });
 
 // 免费资源目录
-fetch("/api/directory").then(r => r.json()).then(dir => {
-  document.getElementById("dir-tbody").innerHTML = dir.map(d => `<tr>
-      <td>${d.name}${d.cn ? ' <span class="cn-badge">境内直连</span>' : ""}</td>
+let directory = [];
+
+function renderDirectory() {
+  const cnOnly = document.getElementById("cn-only").checked;
+  const list = cnOnly ? directory.filter(d => d.cn) : directory;
+  document.getElementById("dir-tbody").innerHTML = list.map(d => `<tr>
+      <td>${d.name} ${d.cn
+        ? '<span class="cn-badge">境内直连</span>'
+        : '<span class="ov-badge">境外</span>'}</td>
       <td class="quota-cell">${d.quota}</td>
       <td style="white-space:nowrap"><a href="${d.applyUrl}" target="_blank" rel="noopener">去申请 ↗</a></td>
       <td>${d.configured
         ? '<span class="ok-badge">✓ 已上榜</span>'
         : '<span class="no-badge">待接入</span>'}</td>
     </tr>`).join("");
+}
+
+fetch("/api/directory").then(r => r.json()).then(dir => {
+  directory = dir;
+  renderDirectory();
 }).catch(() => {
   document.getElementById("dir-tbody").innerHTML =
     '<tr><td colspan="4" class="empty">读取失败</td></tr>';
 });
+
+document.getElementById("cn-only").onchange = renderDirectory;
 
 // 免费模型大全：OpenRouter 公开接口，无需 Key
 let catalog = [];

@@ -225,7 +225,8 @@ async function runBench(env) {
     }
     for (const model of models) {
       const r = await benchOne(t.base, key, model);
-      results.push({ provider: t.id, providerName: t.name, quota: t.quota, tier: tierOf(model), ...r });
+      results.push({ provider: t.id, providerName: t.name, quota: t.quota,
+        cn: !!t.cn, tier: tierOf(model), ...r });
     }
   }
   const doc = { updatedAt: new Date().toISOString(), results };
