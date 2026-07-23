@@ -101,7 +101,7 @@ const BENCH_TARGETS = [
     base: "https://dashscope.aliyuncs.com/compatible-mode/v1",
     models: ["qwen-turbo", "qwen-plus"],
     applyUrl: "https://bailian.console.aliyun.com",
-    quota: "通义千问系列各送 100 万 token（首次开通，有效期半年）" },
+    quota: "新用户送 7000 万+ token（有效期 90 天），100+ 模型可选" },
   { id: "volcengine", cn: true, name: "火山方舟", secret: "VOLCENGINE_KEY",
     base: "https://ark.cn-beijing.volces.com/api/v3",
     models: ["doubao-lite-4k"],

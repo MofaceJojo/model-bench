@@ -39,10 +39,26 @@
   button { background: #1c2130; color: #e2e5ec; border: 1px solid #2e3446;
            border-radius: 6px; padding: 8px 16px; font-size: 13px; cursor: pointer; }
   button:hover { border-color: #10b981; }
-  #catalog-list { font-size: 13px; line-height: 1.9; color: #b8bfce;
-                  columns: 2; column-gap: 32px; }
-  @media (max-width: 640px) { #catalog-list { columns: 1; } }
-  .ctx { color: #626b7f; font-size: 11px; }
+  /* 免费模型大全：搜索 + 按厂商分组 + 能力徽章 */
+  #catalog-search { width: 100%; max-width: 340px; margin: 4px 0 14px;
+    background: #161a24; border: 1px solid #2e3446; border-radius: 8px;
+    color: #e2e5ec; padding: 9px 12px; font-size: 13px; }
+  #catalog-search:focus { outline: none; border-color: #10b981; }
+  #catalog-count { font-size: 12px; color: #8b93a5; margin-bottom: 10px; }
+  .grp { margin-bottom: 18px; }
+  .grp-head { font-size: 12px; color: #8b93a5; text-transform: uppercase;
+    letter-spacing: .05em; padding-bottom: 6px; border-bottom: 1px solid #232735;
+    margin-bottom: 6px; }
+  .grp-head .n { color: #626b7f; text-transform: none; }
+  .m-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 7px 8px; border-radius: 6px; }
+  .m-row:hover { background: #161a24; }
+  .m-id { font-size: 13px; color: #e2e5ec; word-break: break-all; flex: 1;
+          min-width: 200px; }
+  .tag { font-size: 11px; padding: 1px 6px; border-radius: 4px;
+         border: 1px solid #2e3446; color: #8b93a5; white-space: nowrap; }
+  .tag.cap { color: #10b981; border-color: #1d5c46; }
+  .no-hit { color: #8b93a5; font-size: 13px; padding: 20px 0; }
 </style>
 </head>
 <body>
@@ -83,7 +99,11 @@
   <h2>免费模型大全（无需 Key，实时拉取）</h2>
   <div class="hint">来自 OpenRouter 公开列表——所有输入/输出价格为 0 的模型，覆盖各大厂的免费开放版本。</div>
   <button id="catalog-btn">加载当前全部免费模型</button>
-  <div id="catalog-list" style="margin-top:12px"></div>
+  <div id="catalog-box" hidden>
+    <input id="catalog-search" type="search" placeholder="搜索模型名或厂商…" autocomplete="off">
+    <div id="catalog-count"></div>
+    <div id="catalog-list"></div>
+  </div>
 </div>
 <script>
 let rows = [], sortKey = "ttft", sortAsc = true;
@@ -164,25 +184,68 @@ fetch("/api/directory").then(r => r.json()).then(dir => {
 });
 
 // 免费模型大全：OpenRouter 公开接口，无需 Key
+let catalog = [];
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+function renderCatalog(q = "") {
+  const kw = q.trim().toLowerCase();
+  const hits = kw ? catalog.filter(m => m.search.includes(kw)) : catalog;
+  document.getElementById("catalog-count").textContent =
+    kw ? `匹配 ${hits.length} / ${catalog.length} 个模型`
+       : `共 ${catalog.length} 个免费模型，按厂商分组`;
+  const list = document.getElementById("catalog-list");
+  if (!hits.length) { list.innerHTML = '<div class="no-hit">没有匹配的模型</div>'; return; }
+  // 按厂商（模型 id 中 "/" 前的部分）分组
+  const groups = {};
+  hits.forEach(m => (groups[m.vendor] ||= []).push(m));
+  list.innerHTML = Object.entries(groups)
+    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+    .map(([vendor, ms]) => `<div class="grp">
+      <div class="grp-head">${esc(vendor)} <span class="n">· ${ms.length}</span></div>
+      ${ms.map(m => `<div class="m-row">
+        <span class="m-id">${esc(m.id)}</span>
+        ${m.ctx ? `<span class="tag">${m.ctx}k 上下文</span>` : ""}
+        ${m.vision ? '<span class="tag cap">视觉</span>' : ""}
+        ${m.tools ? '<span class="tag cap">工具调用</span>' : ""}
+        ${m.reasoning ? '<span class="tag cap">推理</span>' : ""}
+      </div>`).join("")}
+    </div>`).join("");
+}
+
 document.getElementById("catalog-btn").onclick = async function () {
   this.textContent = "加载中…"; this.disabled = true;
   try {
     const resp = await fetch("/proxy?url=" +
       encodeURIComponent("https://openrouter.ai/api/v1/models"));
     const { data = [] } = await resp.json();
-    const free = data
+    catalog = data
       .filter(m => Number(m.pricing?.prompt) === 0 && Number(m.pricing?.completion) === 0)
-      .sort((a, b) => (b.created || 0) - (a.created || 0));
-    this.style.display = "none";
-    document.getElementById("catalog-list").innerHTML =
-      `<div style="margin-bottom:8px;color:#e2e5ec">共 <b>${free.length}</b> 个免费模型（按上架时间排序）：</div>` +
-      free.map(m =>
-        `<div>${m.id} <span class="ctx">${m.context_length ? Math.round(m.context_length / 1000) + "k 上下文" : ""}</span></div>`
-      ).join("");
+      .sort((a, b) => (b.created || 0) - (a.created || 0))
+      .map(m => {
+        const params = m.supported_parameters || [];
+        return {
+          id: m.id,
+          vendor: m.id.includes("/") ? m.id.split("/")[0] : "其他",
+          ctx: m.context_length ? Math.round(m.context_length / 1000) : 0,
+          vision: (m.architecture?.input_modalities || []).includes("image"),
+          tools: params.includes("tools"),
+          reasoning: params.includes("reasoning"),
+          search: (m.id + " " + (m.name || "")).toLowerCase(),
+        };
+      });
+    this.hidden = true;
+    document.getElementById("catalog-box").hidden = false;
+    renderCatalog();
   } catch (e) {
     this.textContent = "加载失败，点击重试"; this.disabled = false;
   }
 };
+
+document.getElementById("catalog-search").oninput = e => renderCatalog(e.target.value);
 </script>
 </body>
 </html>
